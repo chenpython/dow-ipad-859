@@ -57,7 +57,7 @@ class Bridge(object):
                 self.btype["chat"] = const.MiniMax
 
             # Dashscope models
-            if model_type in [const.QWEN_PLUS, const.QWEN_MAX, const.QWEN_TURBO, const.QWEN3_235B, 
+            if model_type in [const.QWEN_MAX, const.QWEN_TURBO, const.QWEN3_235B, 
                             const.QWEN3_32B, const.QWEN3_14B, const.QWEN_CHAT, 
                             const.QWEN_R1]:
                 self.btype["chat"] = const.QWEN_DASHSCOPE
