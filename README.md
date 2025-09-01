@@ -6,6 +6,12 @@
 
 ### 更新日志
 ```bash
+- **20250901更新内容** 
+修复dify的API接口，需要更新以下3个文件
+1.dow-ipad-859根目录下替换app.py文件
+2.dow-ipad-859/lib目录下新增dify文件夹
+3.dow-ipad-859/bot/dify/dify_bot.py文件更新
+
 - **2025-08-23更新内容** 
 新增支持魔搭平台的推理API，如最新的DeepSeek-V3.1/Kimi-K2-Instruct/GLM-4.5等开源模型，每天可免费对话2000次；
 需更新文件：const.py、config.py、bridge.py、bot_factory.py、modelscope_bot.py这五个文件以支持模型切换；
