@@ -51,9 +51,9 @@ class DifyBot(Bot):
             logger.info("[DIFY] query={}".format(query))
             session_id = context["session_id"]
             # TODO: 适配除微信以外的其他channel
-            channel_type = conf().get("channel_type", "wx849")
+            channel_type = conf().get("channel_type", "wx859")
             user = None
-            if channel_type in ["wx849", "wework", "gewechat"]:
+            if channel_type in ["wx859", "wework", "gewechat"]:
                 user = context["msg"].other_user_nickname if context.get("msg") else "default"
             elif channel_type in ["wechatcom_app", "wechatmp", "wechatmp_service", "wechatcom_service", "web"]:
                 user = context["msg"].other_user_id if context.get("msg") else "default"
