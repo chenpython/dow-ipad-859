@@ -198,7 +198,7 @@ https://rq4rfacax27.feishu.cn/wiki/ULM8waMdEiVfw3kmyS4cixIBnEh?from=from_copylin
 ### 交流群
 
 欢迎进入交流群共同讨论学习，若群二维码过期可以加我个微备注“BOT”拉你进群
-![908fbf2ec969f518ac9463394744cac8](https://github.com/user-attachments/assets/128df118-6583-42c7-a0f5-20f6f53d0575)
+![3d5f419b2dd4b1ae23564be8b3823820](https://github.com/user-attachments/assets/6d3b3962-b9d8-47a4-b8e7-8607047500b7)
 ![0d9634a39fb17e2b0d2119f89249640f](https://github.com/user-attachments/assets/69083353-7b59-44ca-86e9-5f6e98ded3fd)
 
 
