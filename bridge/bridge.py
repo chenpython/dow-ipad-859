@@ -25,6 +25,7 @@ class Bridge(object):
             self.btype["chat"] = bot_type
         else:
             model_type = conf().get("model") or const.GPT35
+            logger.info(f"[Bridge] Initializing with model: {model_type}")
             if model_type in ["text-davinci-003"]:
                 self.btype["chat"] = const.OPEN_AI
             if conf().get("use_azure_chatgpt", False):
@@ -50,26 +51,32 @@ class Bridge(object):
             if model_type in [const.MOONSHOT, "moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"]:
                 self.btype["chat"] = const.MOONSHOT
             # 检查是否为modelscope系列模型
-            if model_type in [const.MODELSCOPE, "modelscope"] or model_type in [const.QWEN3_235B, const.KIMI_K2, const.DS_V31, const.GLM_45]:
+            if model_type in [const.MODELSCOPE, "modelscope"] or model_type in [const.QWEN35_397B, const.KIMI_K25, const.MiniMax_M25, const.DS_V32, const.GLM_5]:
                 self.btype["chat"] = const.MODELSCOPE
 
             if model_type in ["abab6.5-chat"]:
                 self.btype["chat"] = const.MiniMax
 
             # Dashscope models
-            if model_type in [const.QWEN_PLUS, const.QWEN_MAX, const.QWEN_TURBO, const.QWEN3_235B, 
-                            const.QWEN3_32B, const.QWEN3_14B, const.QWEN_CHAT, 
-                            const.QWEN_R1]:
+            if model_type in [const.QWEN_35_PLUS, const.QWEN_35_FLASH, const.QWEN_DS, const.QWEN_GLM, const.QWEN_K25, 
+                            const.QWEN_M25]:
                 self.btype["chat"] = const.QWEN_DASHSCOPE
 
             # Siliconflow models
-            if model_type in [const.DEEPSEEK_V3, const.DEEPSEEK_R1, const.GLM_4_9B, const.GLM_Z1_9B, 
-                            const.GLM_Z1_R_32B, const.MiniMax_M1_80K, const.Hunyuan_A13B, const.ERNIE_45_300B]:
+            if model_type in [const.SF_DEEPSEEK_V32, const.SF_QWEN3, const.SF_KIMI_K2, const.SF_GLM_46]:
                 self.btype["chat"] = const.SILICONFLOW
 
             # Deepseek models
             if model_type in [const.DEEPSEEK_CHAT, const.DEEPSEEK_REASONER]:
                 self.btype["chat"] = const.DEEPSEEK
+
+            # LongCat models
+            logger.debug(f"[Bridge] Checking LongCat models: {model_type} in {[const.LONGCAT_FLASH_LITE, const.LONGCAT_FLASH_CHAT, const.LONGCAT_THINKING, const.LONGCAT_THINKING_2601]}")
+            if model_type in [const.LONGCAT_FLASH_LITE, const.LONGCAT_FLASH_CHAT, const.LONGCAT_THINKING, const.LONGCAT_THINKING_2601]:
+                self.btype["chat"] = const.LONGCAT
+                logger.info(f"[Bridge] Matched LongCat model: {model_type} -> {const.LONGCAT}")
+
+            logger.info(f"[Bridge] Final bot type: {self.btype['chat']}")
 
             if conf().get("use_linkai") and conf().get("linkai_api_key"):
                 self.btype["chat"] = const.LINKAI
@@ -99,6 +106,24 @@ class Bridge(object):
         return self.btype[typename]
 
     def fetch_reply_content(self, query, context: Context) -> Reply:
+        # Agent 模式路由 - 使用AgentBridge（含会话隔离、工具、技能、记忆）
+        if conf().get("agent", False):
+            try:
+                from bridge.agent_bridge import AgentBridge
+
+                # 获取或创建 AgentBridge（懒加载，单次初始化）
+                if not hasattr(self, '_agent_bridge') or self._agent_bridge is None:
+                    self._agent_bridge = AgentBridge(self)
+
+                # 将消息交由 AgentBridge 处理（含会话隔离）
+                return self._agent_bridge.agent_reply(query, context)
+            except ImportError as e:
+                logger.error(f"[Agent] AgentBridge import failed: {e}")
+                return self.get_bot("chat").reply(query, context)
+            except Exception as e:
+                logger.error(f"[Agent] Error: {e}, fallback to normal bot")
+                return self.get_bot("chat").reply(query, context)
+
         return self.get_bot("chat").reply(query, context)
 
     def fetch_voice_to_text(self, voiceFile) -> Reply:
