@@ -23,11 +23,15 @@ available_setting = {
     "open_ai_model": "gpt-4o-mini",  # OpenAI 模型名称
     "proxy": "",  # openai使用的代理
     # chatgpt模型， 当use_azure_chatgpt为true时，其名称为Azure上model deployment名称
-    "model": "对话模型 [openAI, chatGPT, wenxin, xunfei, zhipuai, claude, qwen, dashscope, gemini, moonshot, coze, dify, deepseek，siliconflow]",   # 可选择: gpt-4o, pt-4o-mini, gpt-4-turbo, claude-3-sonnet, wenxin, moonshot, qwen-turbo, xunfei, glm-4, minimax, gemini等模型，全部可选模型详见common/const.py文件
+    "model": "对话模型 [openAI, chatGPT, wenxin, xunfei, zhipuai, claude, qwen, dashscope, gemini, moonshot, coze, dify, deepseek, siliconflow, longcat]",   # 可选择: gpt-4o, gpt-4o-mini, gpt-4-turbo, claude-3-sonnet, wenxin, moonshot, qwen-turbo, xunfei, glm-4, minimax, gemini, LongCat-Flash-Lite等模型，全部可选模型详见common/const.py文件
     "bot_type": "",  # 可选配置，使用兼容openai格式的三方服务时候，需填"chatGPT"。bot具体名称详见common/const.py文件列出的bot_type，如不填根据model名称判断，
     "use_azure_chatgpt": False,  # 是否使用azure的chatgpt
     "azure_deployment_id": "",  # azure 模型部署名称
     "azure_api_version": "",  # azure api版本
+    # LongCat API配置
+    "longcat_api_key": "",    # LongCat API key
+    "longcat_api_base": "https://api.longcat.chat/openai/v1",  # LongCat API base URL
+    "longcat_model": "LongCat-Flash-Chat",  # LongCat 模型名称，可选: LongCat-Flash-Lite, LongCat-Flash-Chat, LongCat-Flash-Thinking, LongCat-Flash-Thinking-2601
     # DeepSeek API配置
     "deepseek_api_key": "",    # DeepSeek API key
     "deepseek_api_base": "https://api.deepseek.com/v1",  # DeepSeek API base URL
@@ -239,6 +243,25 @@ available_setting = {
     "Minimax_group_id": "",
     "Minimax_base_url": "",
     "web_port": 9899,
+    # Agent模式配置
+    "agent": False,  # 是否启用Agent模式
+    "agent_max_turns": 15,  # Agent最大执行步数
+    "agent_auto_run": True,  # Agent是否自动执行
+    "agent_max_context_tokens": 40000,  # Agent上下文最大token数
+    "agent_max_context_turns": 20,  # Agent上下文最大轮数
+    "agent_enable_smart_context": True,  # 开启智能上下文选择
+    "agent_simple_turns": 2,  # 简单对话保留轮数
+    "agent_normal_turns": 3,  # 常规对话保留轮数
+    "agent_context_turns": 5,  # 需要上下文保留轮数
+    "agent_simple_keywords": ["你好", "hello", "hi", "在吗", "吃了吗", "天气", "几点了", "哈哈", "笑死", "哈哈哈", "呵呵", "早上好", "晚上好", "晚安", "最近怎么样", "忙吗", "干嘛呢", "有啥", "推荐", "随便"],  # 简单对话关键词
+    "agent_full_context_keywords": ["之前", "上次", "上次我们", "之前你说的", "记得", "我之前", "帮我看看", "查看", "读取", "搜索", "查找", "调试", "代码", "修改", "写一个", "创建", "生成", "执行", "运行", "安装", "总结", "分析", "对比", "翻译", "解释", "为什么", "怎么", "提示词", "人设", "prompt", "越狱", "管理员", "安全"],  # 需要完整上下文关键词
+    "agent_context_needed_keywords": ["然后", "接下来", "继续", "刚才", "上面", "这个", "那个", "他/她/它", "你说的", "你的意思是", "对吧", "是不是"],  # 需要中等上下文关键词
+    "agent_max_steps": 15,  # Agent最大执行步数
+    "agent_workspace": "~/cow",  # Agent工作空间路径
+    "agent_system_prompt": "",  # Agent系统提示词（可覆盖默认值）
+    "conversation_persistence": True,  # 是否启用对话持久化
+    "bocha_api_key": "",  # Bocha搜索 API Key（web_search工具使用）
+    "tools": [],  # Agent工具配置列表
 }
 
 
