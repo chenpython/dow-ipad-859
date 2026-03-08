@@ -39,7 +39,7 @@
   "group_speech_recognition": false,
   "model": "MiniMax/MiniMax-M2.5",
   "no_need_at": true,
-  "siliconflow_api_base": "https://api.siliconflow.cn/v1/chat/completions",
+  "siliconflow_api_base": "https://api.siliconflow.cn/v1",
   "siliconflow_api_key": "",
   "siliconflow_model": "deepseek-ai/DeepSeek-V3",
   "single_chat_prefix": [""],
@@ -64,7 +64,7 @@
   "agent_normal_turns": 3,
   "agent_context_turns": 5,
   "agent_simple_keywords": ["你好", "hello", "hi", "在吗", "吃了吗", "天气", "几点了", "哈哈", "笑死", "哈哈哈", "呵呵", "早上好", "晚上好", "晚安", "最近怎么样", "忙吗", "干嘛呢", "有啥", "推荐", "随便"],
-  "agent_full_context_keywords": ["之前", "上次", "上次我们", "之前你说的", "记得", "我之前", "帮我看看", "查看", "读取", "搜索", "查找", "调试", "代码", "修改", "写一个", "创建", "生成", "执行", "运行", "安装", "总结", "分析", "对比", "翻译", "解释", "为什么", "怎么", "提示词", "人设", "prompt", "越狱", "管理员", "安全"],
+  "agent_full_context_keywords": ["之前", "上次", "上次我们", "之前你说的", "记得", "我之前", "帮我看看", "读取", "调试", "代码", "修改", "写一个", "创建", "生成", "执行", "运行", "安装", "总结", "分析", "对比", "翻译", "解释", "为什么", "怎么", "提示词", "人设", "prompt", "越狱", "管理员", "安全"],
   "agent_context_needed_keywords": ["然后", "接下来", "继续", "刚才", "上面", "他/她/它", "你说的", "你的意思是", "对吧", "是不是"],
   "conversation_persistence": true
 }
