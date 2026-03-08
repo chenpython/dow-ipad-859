@@ -24,7 +24,10 @@ def create_bot(bot_type):
         const.SF_DEEPSEEK_V32,
         const.SF_QWEN3,
         const.SF_KIMI_K2,
-        const.SF_GLM_46
+        const.SF_GLM_46,
+        const.SF_STEP35,
+        const.SF_LING_FLASH_2,
+        const.SF_MiniMax_M21
     ]:
         from bot.siliconflow.siliconflow_bot import SiliconFlowBot
         return SiliconFlowBot()
@@ -51,7 +54,9 @@ def create_bot(bot_type):
     if model in [
         const.GLM_47_FLASH,
         const.GLM_45_FLASH,
-        const.GLM_46V_FLASH
+        const.GLM_46V_FLASH,
+        const.GLM_4V_FLASH,
+        const.GLM_41V_FLASH
     ]:
         from bot.zhipuai.zhipuai_bot import ZhipuAIBot
         return ZhipuAIBot()
@@ -59,7 +64,11 @@ def create_bot(bot_type):
     # 如果模型是 Dashscope 系列模型，使用 DashscopeBot
     if model in [
         const.QWEN_35_PLUS,
+        const.QWEN_35_PLUS_2602,
         const.QWEN_35_FLASH,
+        const.QWEN_35_FLASH_2602,
+        const.QWEN_35_397B,
+        const.QWEN_35_27B,
         const.QWEN_DS,
         const.QWEN_GLM,
         const.QWEN_K25,
@@ -80,16 +89,31 @@ def create_bot(bot_type):
 
     # 如果模型是 OpenAI 系列模型，使用 OpenAIBot
     if model in [
-        const.O1,
-        const.O1_MINI,
-        const.GPT_41,
-        const.GPT_41_MINI,
-        const.GPT_41_NANO,
-        const.GPT_4O_MINI,
-        const.GPT_4O_MINI_SEARCH        
+        const.GPT_51,
+        const.GPT_52,
+        const.GPT_54,
+        const.GPT_OSS_120B
     ]:
         from bot.openai.open_ai_bot import OpenAIBot
         return OpenAIBot()
+
+    # Grok 模型 → OpenAIBot（兼容 OpenAI API）
+    if model in [
+        const.GROK_41_FAST,
+        const.GROK_41,
+        const.GROK_42
+    ]:
+        from bot.openai.open_ai_bot import OpenAIBot
+        return OpenAIBot()
+
+    # Gemini 模型 → GoogleGeminiBot
+#   if model in [
+#       const.GEMINI_15_FLASH,
+#       const.GEMINI_15_PRO,
+#       const.GEMINI_20_FLASH_EXP
+#   ] or (model and model.startswith("gemini")):
+#       from bot.gemini.google_gemini_bot import GoogleGeminiBot
+#       return GoogleGeminiBot()
 
     # 其他模型的处理逻辑
     if bot_type == const.BAIDU:
