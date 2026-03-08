@@ -548,12 +548,23 @@ class Agent:
         
         返回:
             {
-                'type': str,  # 'simple', 'normal', 'context_needed', 'full_context'
+                'type': str,  # 'standalone', 'simple', 'normal', 'context_needed', 'full_context'
                 'turns': int,  # 建议保留的轮次
                 'reason': str  # 判断原因
             }
         """
+        import re
         from config import conf
+        
+        # 🔴 Fix #1: URL检测 — 消息含URL视为独立任务，不引入历史上下文
+        # 匹配 http/https URL 或 github.com 等常见域名
+        url_pattern = r'https?://[^\s]+|(?:github|gitlab|gitee)\.com/[^\s]+'
+        if re.search(url_pattern, user_message, re.IGNORECASE):
+            return {
+                'type': 'standalone',
+                'turns': 0,   # 0 表示不引入任何历史上下文
+                'reason': '消息包含URL，视为独立任务，不引入历史上下文'
+            }
         
         # 获取配置
         simple_keywords = conf().get("agent_simple_keywords", [
@@ -571,7 +582,7 @@ class Agent:
         ])
         
         context_needed_keywords = conf().get("agent_context_needed_keywords", [
-            "然后", "接下来", "继续", "刚才", "上面", "这个", "那个",
+            "然后", "接下来", "继续", "刚才", "上面",
             "他/她/它", "你说的", "你的意思是", "对吧", "是不是"
         ])
         
@@ -625,14 +636,19 @@ class Agent:
         if not messages:
             return []
         
+        requested_turns = intent.get('turns', -1)
+        
+        # 🔴 Fix #2: standalone 意图 (turns=0) — 不引入任何历史上下文
+        if requested_turns == 0:
+            logger.info(f"[Agent] 检测到独立任务，跳过历史上下文注入 (type={intent.get('type')}, 原因={intent.get('reason')})")
+            return []
+        
         # 识别完整轮次
         turns = self._identify_complete_turns_from_messages(messages)
         
         if not turns:
             # 无法识别轮次，返回原始消息
             return messages
-        
-        requested_turns = intent.get('turns', -1)
         
         # -1 表示需要全部
         if requested_turns == -1:
