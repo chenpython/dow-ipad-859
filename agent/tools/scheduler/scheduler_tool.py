@@ -20,25 +20,28 @@ class SchedulerTool(BaseTool):
     
     name: str = "scheduler"
     description: str = (
-        "创建、查询和管理定时任务（提醒、周期性任务等）。\n\n"
-        "⚠️ 重要：仅当需要「定时/提醒/每天/每周/X分钟后/X点」等延迟或周期执行时才使用此工具。"
+        "创建、查询、管理、清空定时任务（提醒、周期性任务等）。\n"
+        "🚨【绝对规则/强制】🚨：只要用户要求「定时/每天/每周/X分钟后」做什么事，或者要求「删除/清空/查询」定时任务，你**必须、立刻、强制**使用本工具 (scheduler) 执行真实的后台命令！\n"
+        "绝不允许仅仅口头回复“已安排”、“已清空”而不调用本工具，否则属于严重错误！\n\n"
         "使用方法：\n"
         "- 创建：action='create', name='任务名', message/ai_task='内容', schedule_type='once/interval/cron', schedule_value='...'\n"
         "- 查询：action='list' / action='get', task_id='任务ID'\n"
-        "- 管理：action='delete/enable/disable', task_id='任务ID'\n\n"
+        "- 删除单个：action='delete', task_id='任务ID'\n"
+        "- 删除/清空全部：action='clear'\n"
+        "- 管理：action='enable/disable', task_id='任务ID'\n\n"
         "调度类型：\n"
         "- once: 一次性任务，支持相对时间(+5s,+10m,+1h,+1d)或ISO时间\n"
         "- interval: 固定间隔(秒)，如3600表示每小时\n"
         "- cron: cron表达式，如'0 8 * * *'表示每天8点\n\n"
-        "注意：'X秒后'用once+相对时间，'每X秒'用interval"
+        "注意：一次性任务(今天/明天)一定要用 once+ISO；只有「每天/每周」用 cron！"
     )
     params: dict = {
         "type": "object",
         "properties": {
             "action": {
                 "type": "string",
-                "enum": ["create", "list", "get", "delete", "enable", "disable"],
-                "description": "操作类型: create(创建), list(列表), get(查询), delete(删除), enable(启用), disable(禁用)"
+                "enum": ["create", "list", "get", "delete", "clear", "enable", "disable"],
+                "description": "操作类型: create(创建), list(列表), get(查询), delete(删除单个), clear(清空所有), enable(启用), disable(禁用)"
             },
             "task_id": {
                 "type": "string",
@@ -114,6 +117,9 @@ class SchedulerTool(BaseTool):
                 return ToolResult.success(result)
             elif action == "disable":
                 result = self._disable_task(**kwargs)
+                return ToolResult.success(result)
+            elif action == "clear":
+                result = self._clear_tasks(**kwargs)
                 return ToolResult.success(result)
             else:
                 return ToolResult.fail(f"未知操作: {action}")
@@ -295,6 +301,15 @@ class SchedulerTool(BaseTool):
         self.task_store.delete_task(task_id)
         return f"✅ 任务 '{task['name']}' ({task_id}) 已删除"
     
+    def _clear_tasks(self, **kwargs) -> str:
+        """Clear all tasks"""
+        tasks = self.task_store.list_tasks(enabled_only=False)
+        deleted = 0
+        for task in tasks:
+            self.task_store.delete_task(task['id'])
+            deleted += 1
+        return f"✅ 已成功清空所有定时任务。共删除了 {deleted} 个任务。"
+    
     def _enable_task(self, **kwargs) -> str:
         """Enable a task"""
         task_id = kwargs.get("task_id")
@@ -469,10 +484,10 @@ class SchedulerTool(BaseTool):
         default_receiver_name = self._get_receiver_name(context)
         default_is_group      = context.get("isgroup", False)
 
-        # 从内容中提取目标群名（匹配"发到/发送到/发至/发给 X群"）
+        # 从内容中提取目标群名（匹配"发到/发送到/发至/发给/推送到/在/到 X群"）
         patterns = [
-            r'发(?:到|送到|至|给)\s*["\'\u201c\u2018]?([^"\'\u201c\u201d\u2018\u2019，,。！!？?\n]+?群)["\'\u201d\u2019]?',
-            r'(?:推送|搜索.{0,10}?发.{0,5}?到|整理.{0,10}?发.{0,5}?到)\s*["\'\u201c\u2018]?([^"\'\u201c\u201d\u2018\u2019，,。！!？?\n]+?群)["\'\u201d\u2019]?',
+            r'(?:发到|发送到|发至|发给|发往|推送到|在|到)\s*["\'\u201c\u2018]?([^"\'\u201c\u201d\u2018\u2019，,。！!？?\n]{2,}?群)["\'\u201d\u2019]?',
+            r'(?:推送|搜索.{0,10}?发.{0,5}?到|整理.{0,10}?发.{0,5}?到)\s*["\'\u201c\u2018]?([^"\'\u201c\u201d\u2018\u2019，,。！!？?\n]{2,}?群)["\'\u201d\u2019]?',
         ]
 
         group_name = None
