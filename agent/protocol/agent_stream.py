@@ -773,30 +773,58 @@ class AgentStreamExecutor:
                         "抱歉，之前的对话出现了问题。我已清空历史记录，请重新发送你的消息。"
                     )
             
-            # Check if error is rate limit (429)
-            is_rate_limit = '429' in error_str_lower or 'rate limit' in error_str_lower
+            # ----------------------------------------------------------------
+            # 分类处理错误类型
+            # ----------------------------------------------------------------
 
-            # Check if error is a server-side 5xx (上游错误，重试多次也无意义，限制为 1 次)
-            is_server_error = any(code in error_str_lower for code in ['500', '502', '503', '504', '512'])
+            # 1️⃣ 不可恢复错误（无论重试多少次都不会成功） → 立即失败
+            # insufficient_quota: 账户 token 总值耗尽
+            # invalid_api_key / authentication: 秘要无效
+            is_fatal = any(keyword in error_str_lower for keyword in [
+                'insufficient_quota', 'quota_exceeded', 'billing',
+                'invalid_api_key', 'authentication', 'unauthorized',
+                'account_deactivated', 'access_terminated'
+            ])
+            if is_fatal:
+                # 给出用户可读的中文错误
+                if 'insufficient_quota' in error_str_lower or 'quota' in error_str_lower:
+                    user_msg = "❗️ API 配额已耗尽，请到模型控制台充値或切换 API Key。"
+                elif 'invalid_api_key' in error_str_lower or 'authentication' in error_str_lower:
+                    user_msg = "❗️ API Key 无效或鉴权失败，请检查配置。"
+                else:
+                    user_msg = f"❗️ API 错误（不可恢复）：{error_str[:200]}"
+                logger.error(f"❌️ 不可恢复 API 错误，跳过重试： {e}")
+                raise Exception(f"[API_ERROR] {user_msg}")
 
-            # Check if error is retryable (timeout, connection, server busy, etc.)
-            is_retryable = any(keyword in error_str_lower for keyword in [
-                'timeout', 'timed out', 'connection', 'network',
-                'rate limit', 'overloaded', 'unavailable', 'busy', 'retry',
-                '429', '500', '502', '503', '504', '512'
+            # 2️⃣ 频率超限（limit_requests / rate_limit）→ 可恢复，等待后重试
+            is_rate_limit = any(keyword in error_str_lower for keyword in [
+                'limit_requests', 'rate_limit', 'rate limit', 'too_many_requests',
+                '429'
             ])
 
-            # 5xx 错误最多重试 1 次，其余可重试错误保持 max_retries
+            # 3️⃣ 服务端 5xx 错误 → 限制重试为 1 次
+            is_server_error = any(code in error_str_lower for code in [
+                '500', '502', '503', '504', '512'
+            ])
+
+            # 4️⃣ 临时错误（超时 / 连接问题）→ 指数退避重试
+            is_retryable = is_rate_limit or is_server_error or any(keyword in error_str_lower for keyword in [
+                'timeout', 'timed out', 'connection', 'network',
+                'overloaded', 'unavailable', 'busy', 'retry'
+            ])
+
+            # 5xx 错误最多重试 1 次，其他错误保持 max_retries
             effective_max = 1 if is_server_error else max_retries
 
             if is_retryable and retry_count < effective_max:
-                # Rate limit needs longer wait time
                 if is_rate_limit:
-                    wait_time = 30 + (retry_count * 15)  # 30s, 45s for rate limit
+                    # 频率超限：第 1 次等 15s，第 2 次等 30s（原来 30s+45s 共耗时 75s，减半）
+                    wait_time = 15 + (retry_count * 15)
                 else:
-                    wait_time = (retry_count + 1) * 2   # 2s, 4s for other errors
+                    # 超时 / 连接：指数退避 2s, 4s
+                    wait_time = (retry_count + 1) * 2
 
-                logger.warning(f"⚠️ LLM API error (attempt {retry_count + 1}/{effective_max}): {e}")
+                logger.warning(f"⚠️ LLM API 频率超限 (attempt {retry_count + 1}/{effective_max}): {e}")
                 logger.info(f"Retrying in {wait_time}s...")
                 time.sleep(wait_time)
                 return self._call_llm_stream(
@@ -807,7 +835,6 @@ class AgentStreamExecutor:
             else:
                 if retry_count >= effective_max:
                     logger.error(f"❌ LLM API error after {effective_max} attempt(s): {e}")
-                    # 构造用户可见的具体错误信息
                     raise Exception(f"[API_ERROR] {error_str}")
                 else:
                     logger.error(f"❌ LLM call error (non-retryable): {e}")
