@@ -155,6 +155,14 @@ class SchedulerTool(BaseTool):
         
         context = self.current_context
         
+        # ── 目标群解析 ─────────────────────────────────────────────────────
+        # 若 ai_task/message 中含有明确的目标群名（如"发到Bot测试群"），
+        # 则查询群 wxid 并覆盖 receiver，确保任务发到指定群而非发件人私聊。
+        task_content = ai_task or message or ""
+        resolved_receiver, resolved_receiver_name, resolved_is_group = \
+            self._resolve_group_receiver(task_content, context)
+        # ──────────────────────────────────────────────────────────────────
+        
         # Create task
         task_id = str(uuid.uuid4())[:8]
         
@@ -163,20 +171,21 @@ class SchedulerTool(BaseTool):
             action = {
                 "type": "send_message",
                 "content": message,
-                "receiver": context.get("receiver"),
-                "receiver_name": self._get_receiver_name(context),
-                "is_group": context.get("isgroup", False),
+                "receiver": resolved_receiver,
+                "receiver_name": resolved_receiver_name,
+                "is_group": resolved_is_group,
                 "channel_type": self.config.get("channel_type", "unknown")
             }
         else:  # ai_task
             action = {
                 "type": "agent_task",
                 "task_description": ai_task,
-                "receiver": context.get("receiver"),
-                "receiver_name": self._get_receiver_name(context),
-                "is_group": context.get("isgroup", False),
+                "receiver": resolved_receiver,
+                "receiver_name": resolved_receiver_name,
+                "is_group": resolved_is_group,
                 "channel_type": self.config.get("channel_type", "unknown")
             }
+
         
         # 针对钉钉单聊，额外存储 sender_staff_id
         msg = context.kwargs.get("msg")
@@ -441,3 +450,102 @@ class SchedulerTool(BaseTool):
         except Exception:
             pass
         return "未知"
+
+    def _resolve_group_receiver(self, task_content: str, context: Context):
+        """
+        从 ai_task/message 内容中识别目标群名，查询 wxid 并返回
+        (receiver_wxid, receiver_name, is_group)。
+        若未找到目标群，降级使用当前 context 的 receiver。
+
+        搜索顺序：
+          1. difytask 插件的 SQLite 数据库（groups 表）
+          2. wx849 的 JSON 缓存文件（wx849_rooms.json）
+        """
+        import re
+        import os
+        import json
+
+        default_receiver      = context.get("receiver")
+        default_receiver_name = self._get_receiver_name(context)
+        default_is_group      = context.get("isgroup", False)
+
+        # 从内容中提取目标群名（匹配"发到/发送到/发至/发给 X群"）
+        patterns = [
+            r'发(?:到|送到|至|给)\s*["\'\u201c\u2018]?([^"\'\u201c\u201d\u2018\u2019，,。！!？?\n]+?群)["\'\u201d\u2019]?',
+            r'(?:推送|搜索.{0,10}?发.{0,5}?到|整理.{0,10}?发.{0,5}?到)\s*["\'\u201c\u2018]?([^"\'\u201c\u201d\u2018\u2019，,。！!？?\n]+?群)["\'\u201d\u2019]?',
+        ]
+
+        group_name = None
+        for pat in patterns:
+            m = re.search(pat, task_content)
+            if m:
+                candidate = m.group(1).strip().strip('"\'""\'\'')
+                if len(candidate) >= 2:
+                    group_name = candidate
+                    break
+
+        if not group_name:
+            return default_receiver, default_receiver_name, default_is_group
+
+        logger.info(f"[SchedulerTool] Detected target group name in task: '{group_name}'")
+
+        # 1. 查询 difytask SQLite 数据库
+        try:
+            import sqlite3
+            difytask_db = os.path.normpath(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "..", "..", "..", "plugins", "difytask", "data", "tasks.db"
+            ))
+            if os.path.isfile(difytask_db):
+                conn = sqlite3.connect(difytask_db)
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT wxid, nickname FROM groups WHERE nickname LIKE ?",
+                    (f"%{group_name}%",)
+                )
+                rows = cursor.fetchall()
+                conn.close()
+                if rows:
+                    for wxid, nickname in rows:
+                        if nickname == group_name:
+                            logger.info(f"[SchedulerTool] Resolved '{group_name}' -> {wxid} (exact, difytask DB)")
+                            return wxid, nickname, True
+                    wxid, nickname = rows[0]
+                    logger.info(f"[SchedulerTool] Resolved '{group_name}' -> {wxid} (fuzzy, difytask DB)")
+                    return wxid, nickname, True
+        except Exception as e:
+            logger.warning(f"[SchedulerTool] difytask DB lookup failed: {e}")
+
+        # 2. 查询 wx849_rooms.json
+        try:
+            rooms_path = os.path.join("tmp", "wx849_rooms.json")
+            if os.path.isfile(rooms_path):
+                with open(rooms_path, "r", encoding="utf-8") as f:
+                    rooms_data = json.load(f)
+                entries = list(rooms_data.values()) if isinstance(rooms_data, dict) else rooms_data
+                exact_match = None
+                fuzzy_match = None
+                for entry in entries:
+                    if not isinstance(entry, dict):
+                        continue
+                    wxid     = entry.get("chatroomId") or entry.get("wxid", "")
+                    nickname = entry.get("nickName", "")
+                    if not wxid or "@chatroom" not in wxid:
+                        continue
+                    if nickname == group_name:
+                        exact_match = (wxid, nickname)
+                        break
+                    if group_name in nickname and fuzzy_match is None:
+                        fuzzy_match = (wxid, nickname)
+                result = exact_match or fuzzy_match
+                if result:
+                    wxid, nickname = result
+                    match_type = "exact" if exact_match else "fuzzy"
+                    logger.info(f"[SchedulerTool] Resolved '{group_name}' -> {wxid} ({match_type}, wx849_rooms.json)")
+                    return wxid, nickname, True
+        except Exception as e:
+            logger.warning(f"[SchedulerTool] wx849_rooms.json lookup failed: {e}")
+
+        logger.warning(f"[SchedulerTool] Could not resolve group '{group_name}', using default receiver")
+        return default_receiver, default_receiver_name, default_is_group
+
