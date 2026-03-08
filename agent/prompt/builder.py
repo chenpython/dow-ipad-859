@@ -243,6 +243,11 @@ def _build_skills_section(skill_manager: Any, tools: Optional[List[Any]], langua
         "- 只有当所有技能的描述都与当前请求完全无关时，才跳过技能直接回复",
         "- 读取 SKILL.md 后直接按其指令执行，无需多余的预检查",
         "",
+        "> [!IMPORTANT] **剧烈警告**：技能名称（如 `wechat-fetch`、`web-fetch`、`github-fetch` 等）**不是可以直接调用的工具名称**。",
+        "> 直接调用将会导致 `Tool not found` 错误。正确流程：",
+        "> 1. 用 `{read_tool_name}` 读取对应的 `SKILL.md`",
+        "> 2. 严格按文件中的指令使用 `bash` 执行脚本操作",
+        "",
         "**注意**: 技能描述可能是中英文混写，请基于语义理解进行匹配，不要因为语言不同而跳过相关技能。技能和工具不同，必须先读取其SKILL.md并按照文件内容运行，永远不要一次性读取多个技能。",
         "",
         "以下是可用技能："
