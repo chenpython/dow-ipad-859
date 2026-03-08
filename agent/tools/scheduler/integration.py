@@ -27,6 +27,10 @@ def init_scheduler(agent_bridge) -> bool:
     """
     global _scheduler_service, _task_store
     
+    if _scheduler_service is not None and _scheduler_service.running:
+        logger.debug("[Scheduler] Service already initialized globally, skipping re-init")
+        return True
+    
     try:
         from agent.tools.scheduler.task_store import TaskStore
         from agent.tools.scheduler.scheduler_service import SchedulerService
