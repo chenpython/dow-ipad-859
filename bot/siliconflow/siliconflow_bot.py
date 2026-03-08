@@ -30,14 +30,19 @@ class SiliconFlowBot(Bot):
         
         # 获取当前选择的模型
         model = conf().get("model")
-        # 设置默认模型
-        if not model or model not in [
+        # SiliconFlow 支持的模型列表
+        _sf_models = [
             const.SF_DEEPSEEK_V32,
             const.SF_QWEN3,
             const.SF_KIMI_K2,
-            const.SF_GLM_46
-        ]:
-            model = const.QWEN3_235B_2507
+            const.SF_GLM_46,
+            const.SF_STEP35,
+            const.SF_LING_FLASH_2,
+            const.SF_MiniMax_M21
+        ]
+        # 设置默认模型
+        if not model or model not in _sf_models:
+            model = const.SF_DEEPSEEK_V32
         
         # 设置模型参数
         self.args = {
@@ -105,7 +110,10 @@ class SiliconFlowBot(Bot):
                     const.SF_DEEPSEEK_V32,
                     const.SF_QWEN3,
                     const.SF_KIMI_K2,
-                    const.SF_GLM_46
+                    const.SF_GLM_46,
+                    const.SF_STEP35,
+                    const.SF_LING_FLASH_2,
+                    const.SF_MiniMax_M21
                 ]:
                     self.args["model"] = model
                     reply = Reply(ReplyType.INFO, f"模型已切换为 {model}")
