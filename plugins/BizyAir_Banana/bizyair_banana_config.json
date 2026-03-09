@@ -1,0 +1,19 @@
+{
+  "api_key": "",
+  "api_base": "https://api.bizyair.cn",
+  "web_app_id_nb2": 47318,
+  "web_app_id_nbp": 47607,
+  "web_app_id_nb2_edit": 47116,
+  "web_app_id_nbp_edit": 40878,
+  "web_app_id_nbp_multiview": 43998,
+  "default_ratio": "1:1",
+  "default_resolution": "2K",
+  "max_wait": 300,
+  "poll_interval": 6,
+  "commands_nb2": ["nb2画图","NB2画图"],
+  "commands_nbp": ["nbp画图","NBP画图"],
+  "commands_nb2_edit": ["nb2改图","NB2改图"],
+  "commands_nbp_edit": ["nbp改图","NBP改图"],
+  "commands_nbp_multiview": ["nbp多视角","NBP多视角"],
+  "timeout": 180
+}
