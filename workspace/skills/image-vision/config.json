@@ -1,0 +1,24 @@
+{
+    "primary": {
+        "provider": "zhipu",
+        "base_url": "https://open.bigmodel.cn/api/paas/v4",
+        "model": "glm-4.6v-flash",
+        "api_key": "",
+        "timeout": 60,
+        "temperature": 0.7,
+        "max_tokens": 2048
+    },
+    "fallback": {
+        "provider": "openai_compatible",
+        "base_url": "https://ai.t8star.cn/v1",
+        "model": "gemini-3.1-flash-lite-preview",
+        "api_key": "",
+        "timeout": 60,
+        "temperature": 0.7,
+        "max_tokens": 2048
+    },
+    "image": {
+        "max_pixels": 1024,
+        "jpeg_quality": 85
+    }
+}
